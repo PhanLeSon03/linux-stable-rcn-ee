@@ -1,0 +1,72 @@
+/*
+ * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+&ocp {
+	P9_17_pinmux {
+		status = "disabled";
+	};
+	P9_18_pinmux {
+		status = "disabled";
+	};
+
+	/* The following are disabled because the audio mode is set
+	   by <&mcasp0_pins_dsp56725>. */
+	P9_27_pinmux {
+                /* mcasp0_fsr, INPUT | MODE0, Codec WCLK */
+		status = "disabled";
+	};
+	P9_12_pinmux {
+		/* mcasp0_aclkr_mux3,      MODE6 | INPUT P9_12   gpio1_28 */
+		status = "disabled";
+	};
+	P9_30_pinmux {
+		/* mcasp0_axr0,       MODE0 | INPUT P9_30   GPIO3_16 */
+		status = "disabled";
+	};
+
+	P9_28_pinmux {
+		/* mcasp0_axr2        MODE2 | INPUT P9_28   GPIO3_17  */
+		status = "disabled";
+	};
+
+	P9_25_pinmux {
+		/* mcasp0_axr3, INPUT | MODE2, Codec SDO56 */
+		status = "disabled";
+	};
+};
+
+
+&mcasp0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcasp0_pins_dsp56725>;
+
+	status = "okay";
+
+	op-mode = <0>;          /* MCASP_IIS_MODE */
+	tdm-slots = <10>;
+	num-serializer = <4>;
+	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
+	2 0 2 2
+	>;
+	tx-num-evt = <0>;
+	rx-num-evt = <1>;
+};
+
+/ {
+	dsp56725: dsp56725 {
+		compatible = "ti,dsp56725";
+	};
+
+	sound {
+		compatible = "ti,beaglebone-black-dsp56725";
+		ti,model = "DSP56725";
+		ti,audio-codec = <&dsp56725>;
+		ti,mcasp-controller = <&mcasp0>;
+		ti,codec-clock-rate = <24576000>;
+	};
+};

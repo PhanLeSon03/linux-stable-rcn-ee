@@ -87,6 +87,8 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_PCM1681 if I2C
 	select SND_SOC_PCM1792A if SPI_MASTER
 	select SND_SOC_PCM3008
+	select SND_SOC_PCM5102A
+        select SND_SOC_DSP56725
 	select SND_SOC_PCM512x_I2C if I2C
 	select SND_SOC_PCM512x_SPI if SPI_MASTER
 	select SND_SOC_RT286 if I2C
@@ -518,7 +520,13 @@ config SND_SOC_PCM1792A
 	depends on SPI_MASTER
 
 config SND_SOC_PCM3008
-       tristate
+    tristate
+
+config SND_SOC_PCM5102A
+	tristate "Texas Intrusments PCM5102A CODEC"
+
+config SND_SOC_DSP56725
+	tristate "NXP DSP56725 Connection"
 
 config SND_SOC_PCM512x
 	tristate

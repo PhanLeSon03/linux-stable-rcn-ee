@@ -20,9 +20,14 @@
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/soc.h>
+#include <sound/pcm_params.h>   
 
 #include <asm/dma.h>
 #include <asm/mach-types.h>
+#include "../codecs/adau17x1.h"
+
+#define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_DSP_A |SND_SOC_DAIFMT_IB_IF)
+#define DSP56725_BCLK_LRCLK_RATIO 64*5
 
 struct snd_soc_card_drvdata_davinci {
 	struct clk *mclk;
@@ -54,6 +59,151 @@ static void evm_shutdown(struct snd_pcm_substream *substream)
 		clk_disable_unprepare(drvdata->mclk);
 }
 
+
+static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
+                           struct snd_pcm_hw_params *params)
+  {
+          struct snd_soc_pcm_runtime *rtd = substream->private_data;
+          struct snd_soc_dai *codec_dai = rtd->codec_dai;
+          struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+          struct snd_soc_codec *codec = rtd->codec;
+          struct snd_soc_card *soc_card = rtd->card;
+          struct platform_device *pdev = to_platform_device(soc_card->dev);
+  
+          unsigned int bclk_freq = snd_soc_params_to_bclk(params);
+          unsigned sysclk = ((struct snd_soc_card_drvdata_davinci *)snd_soc_card_get_drvdata(soc_card))->sysclk;
+          int pll_rate = 0; 
+          int ret;
+          printk("bclk (from params): %d\n", (int)bclk_freq);
+
+  
+          bclk_freq = 1;
+          switch (params_format(params))
+          {
+              case SNDRV_PCM_FORMAT_S32_LE:
+              case SNDRV_PCM_FORMAT_S24_LE:
+              case SNDRV_PCM_FORMAT_S24_3LE:
+                  bclk_freq *= 32*10;
+                  break;
+
+              default:
+                  dev_err(codec->dev, "Unsupported format\n");
+                  return -EINVAL;
+           }
+           bclk_freq *= (int)params_rate(params);
+           printk("fs: %d\n", (int)params_rate(params));
+           printk("sysclk: %d\n", (int)sysclk);
+           printk("bclk: %d\n", (int)bclk_freq);
+  
+           ret = snd_soc_dai_set_clkdiv(cpu_dai, 1, sysclk/bclk_freq);
+           if (ret < 0) {
+               dev_err(&pdev->dev, "can't set CPU DAI clock divider %d\n",
+               ret);
+               return ret;
+           }
+  
+           printk("evm_dsp56725_hw_params: Starting operations.\n");
+	   printk("sysclk=%d\n", sysclk);
+	   printk("bclk_freq=%d\n", bclk_freq);
+
+	  // set codec tdm slots
+	  snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FF, 0x3FF, 10, 32);
+
+// lock codec PLL to sysclk
+// (we do not know what rate we want yet, so choose something that makes sense)
+          pll_rate = 48000 * 1024;
+          snd_soc_dai_set_pll(cpu_dai, 0, ADAU17X1_PLL_SRC_MCLK, sysclk, pll_rate);
+          // enable codec clock
+	  snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_PLL, pll_rate, SND_SOC_CLOCK_IN);
+  
+          /* set cpu DAI configuration */
+          //ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_IF | SND_SOC_DAIFMT_CBS_CFS);
+          if (ret < 0)
+                 return ret;
+  
+  
+	  ret = snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_MCLK, sysclk, SND_SOC_CLOCK_OUT);
+
+	  if (ret < 0)
+		return ret;
+
+          /*
+          ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_IN);
+          if (ret < 0)
+                  return ret;
+          */
+          return 0;
+ }
+
+
+  /* Logic for a dsp56725 as connected on a beaglebone black */
+  static int evm_dsp56725_init(struct snd_soc_pcm_runtime *rtd)
+  {
+      struct snd_soc_dai *codec_dai = rtd->codec_dai;
+      struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+      //struct snd_soc_dapm_context *dapm = &codec_dai->dapm;
+  
+  
+      struct snd_soc_card *card = rtd->card;
+      //struct device_node *np = codec_dai->card->dev->of_node;
+      struct device_node *np = card->dev->of_node;
+      int ret;
+  
+      printk("dsp56725: init setting clocks.\n");
+      printk("dsp56725: using cpu %s\n", cpu_dai->name);
+  
+      /* set cpu DAI configuration */
+      ret = snd_soc_dai_set_clkdiv(cpu_dai, 2, DSP56725_BCLK_LRCLK_RATIO);
+      ret = snd_soc_dai_set_fmt(cpu_dai, DSP56725_AUDIO_FORMAT);
+      if (ret < 0)
+         return ret;
+  
+      /* set the CPU system clock */
+      
+      ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_OUT);
+      if (ret < 0)
+         return ret;
+      
+      return 0;
+  }
+  
+
+static int pcm5102a_hw_params(struct snd_pcm_substream *substream,
+				 struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_codec *codec = rtd->codec;
+          struct snd_soc_card *soc_card = rtd->card;
+	struct platform_device *pdev = to_platform_device(soc_card->dev);
+          unsigned int bclk_freq = snd_soc_params_to_bclk(params);
+	unsigned sysclk = ((struct snd_soc_card_drvdata_davinci *)
+			   snd_soc_card_get_drvdata(soc_card))->sysclk;
+	int ret;
+ 
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, 1, sysclk/bclk_freq);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "can't set CPU DAI clock divider %d\n",
+			ret);
+		return ret;
+	}
+ 
+	printk("PCM5102a hw params\n");
+	printk("sysclk=%d\n", sysclk);
+	printk("bclk_freq=%d\n", bclk_freq);
+	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
+	if (ret < 0)
+		return ret;
+ 
+	return ret;
+}
+
+static struct snd_soc_ops pcm5102a_ops = {
+	.startup = evm_startup,
+	.shutdown = evm_shutdown,
+	.hw_params = pcm5102a_hw_params,
+};
+
 static int evm_hw_params(struct snd_pcm_substream *substream,
 			 struct snd_pcm_hw_params *params)
 {
@@ -77,6 +227,13 @@ static int evm_hw_params(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+static struct snd_soc_ops evm_dsp56725_ops = {
+      .startup = evm_startup,
+      .shutdown = evm_shutdown,
+      .hw_params = evm_dsp56725_hw_params,
+  };
+
+
 static int wilink8_bt_hw_params(struct snd_pcm_substream *substream,
 				 struct snd_pcm_hw_params *params)
 {
@@ -221,6 +378,8 @@ static int evm_aic3x_init(struct snd_soc_pcm_runtime *rtd)
 
 	return 0;
 }
+
+
 
 /* davinci-evm digital audio interface glue - connects codec <--> CPU */
 static struct snd_soc_dai_link dm6446_evm_dai = {
@@ -429,7 +588,32 @@ static struct snd_soc_dai_link evm_dai_wilink8_bt = {
 			SND_SOC_DAIFMT_DSP_A),
 };
 
+static struct snd_soc_dai_link evm_dai_dsp56725 = {
+       .name      = "dsp56725",
+       .stream_name       = "Capture",
+       .codec_dai_name    = "dsp56725-audio",
+       .ops       = &evm_dsp56725_ops,
+       .init = evm_dsp56725_init,
+       .dai_fmt   = DSP56725_AUDIO_FORMAT,
+};
+
+static struct snd_soc_dai_link evm_dai_pcm5102a = {
+	.name		= "PCM5102A", //This is chosen arbitrarily.  Can be anything.
+	.stream_name	= "Playback", //This comes from the PCM5102a driver create previously.
+	.codec_dai_name	= "pcm5102a-hifi", //This comes from the PCM5102a driver create previously
+	.ops            = &pcm5102a_ops, //This is a structure that we will create later.
+	.dai_fmt 	= (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_I2S |
+			   SND_SOC_DAIFMT_IB_NF),
+};
 static const struct of_device_id davinci_evm_dt_ids[] = {
+	{
+		.compatible = "ti,pcm5102a-evm-audio",
+		.data = &evm_dai_pcm5102a,
+	},
+        {                                                                                           
+                .compatible = "ti,beaglebone-black-dsp56725",                                       
+                .data = &evm_dai_dsp56725,                                                          
+        },
 	{
 		.compatible = "ti,da830-evm-audio",
 		.data = (void *) &evm_dai_tlv320aic3x,
