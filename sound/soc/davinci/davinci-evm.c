@@ -27,6 +27,8 @@
 #include "../codecs/adau17x1.h"
 
 #define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_DSP_A |SND_SOC_DAIFMT_IB_IF)
+//#define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_IF | \
+//				SND_SOC_DAIFMT_CBM_CFM)
 #define DSP56725_BCLK_LRCLK_RATIO 64*5
 
 struct snd_soc_card_drvdata_davinci {
@@ -72,6 +74,8 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
   
           unsigned int bclk_freq = snd_soc_params_to_bclk(params);
           unsigned sysclk = ((struct snd_soc_card_drvdata_davinci *)snd_soc_card_get_drvdata(soc_card))->sysclk;
+
+          unsigned int channel_map[] = {0, 4, 1, 5, 2, 6, 3, 7, 8, 9};
           int pll_rate = 0; 
           int ret;
           printk("bclk (from params): %d\n", (int)bclk_freq);
@@ -103,35 +107,48 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
            }
   
            printk("evm_dsp56725_hw_params: Starting operations.\n");
-	   printk("sysclk=%d\n", sysclk);
-	   printk("bclk_freq=%d\n", bclk_freq);
+	       printk("sysclk=%d\n", sysclk);
 
-	  // set codec tdm slots
-	  snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FF, 0x3FF, 10, 32);
 
-// lock codec PLL to sysclk
-// (we do not know what rate we want yet, so choose something that makes sense)
-          pll_rate = 48000 * 1024;
-          snd_soc_dai_set_pll(cpu_dai, 0, ADAU17X1_PLL_SRC_MCLK, sysclk, pll_rate);
+	   	   /* set cpu DAI channel mapping */
+	   	   //ret = snd_soc_dai_set_channel_map(cpu_dai, ARRAY_SIZE(channel_map),
+	   	   //channel_map, ARRAY_SIZE(channel_map), channel_map);
+	   	   //if (ret < 0)
+	   	   //    return ret;
+
+	       // set codec tdm slots
+	       //ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FF, 0x3FF, 10, 32);
+	   	   //if (ret < 0)
+	   	   //    return ret;
+
+          // lock codec PLL to sysclk
+          // (we do not know what rate we want yet, so choose something that makes sense)
+          //pll_rate = 48000 * 1024;
+          //ret = snd_soc_dai_set_pll(cpu_dai, 0, ADAU17X1_PLL_SRC_MCLK, sysclk, pll_rate);
           // enable codec clock
-	  snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_PLL, pll_rate, SND_SOC_CLOCK_IN);
+	      //ret = snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_PLL, pll_rate, SND_SOC_CLOCK_IN);
   
           /* set cpu DAI configuration */
           //ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_IF | SND_SOC_DAIFMT_CBS_CFS);
-          if (ret < 0)
-                 return ret;
+          //if (ret < 0)
+          //       return ret;
   
   
-	  ret = snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_MCLK, sysclk, SND_SOC_CLOCK_OUT);
+	     //ret = snd_soc_dai_set_sysclk(cpu_dai, ADAU17X1_CLK_SRC_MCLK, sysclk, SND_SOC_CLOCK_OUT);
 
-	  if (ret < 0)
-		return ret;
+	     //if (ret < 0)
+		 //  return ret;
 
-          /*
-          ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_IN);
+	     /* set cpu DAI configuration */
+	     ret = snd_soc_dai_set_fmt(cpu_dai, DSP56725_AUDIO_FORMAT);
+	     if (ret < 0)
+	         return ret;
+
+
+          ret = snd_soc_dai_set_sysclk(codec_dai, 0, 0, SND_SOC_CLOCK_IN);
           if (ret < 0)
                   return ret;
-          */
+
           return 0;
  }
 

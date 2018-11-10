@@ -127,10 +127,10 @@ static const struct snd_soc_dapm_route pcm3168_dapm_routes[] = {
 
 
 static const struct snd_soc_codec_driver dsp56725_codec_driver = {
-	.dapm_widgets		= pcm3168_dapm_widgets,
-	.num_dapm_widgets	= ARRAY_SIZE(pcm3168_dapm_widgets),
-	.dapm_routes		= pcm3168_dapm_routes,
-	.num_dapm_routes	= ARRAY_SIZE(pcm3168_dapm_routes),
+//	.dapm_widgets		= pcm3168_dapm_widgets,
+//	.num_dapm_widgets	= ARRAY_SIZE(pcm3168_dapm_widgets),
+//	.dapm_routes		= pcm3168_dapm_routes,
+//	.num_dapm_routes	= ARRAY_SIZE(pcm3168_dapm_routes),
 
 };
 
