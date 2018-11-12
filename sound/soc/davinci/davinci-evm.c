@@ -26,7 +26,7 @@
 #include <asm/mach-types.h>
 #include "../codecs/adau17x1.h"
 
-#define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_CBS_CFS | SND_SOC_DAIFMT_DSP_A |SND_SOC_DAIFMT_IB_IF)
+#define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_DSP_A |SND_SOC_DAIFMT_NB_NF)
 //#define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_IF | \
 //				SND_SOC_DAIFMT_CBM_CFM)
 #define DSP56725_BCLK_LRCLK_RATIO 64*5
@@ -117,10 +117,9 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
 	   	   //    return ret;
 
 	       // set codec tdm slots
-	       //ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FF, 0x3FF, 10, 32);
-	   	   //if (ret < 0)
-	   	   //    return ret;
-
+	       ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FF, 0x3FF, 10, 32);
+	   	   if (ret < 0)
+	          return ret;
           // lock codec PLL to sysclk
           // (we do not know what rate we want yet, so choose something that makes sense)
           //pll_rate = 48000 * 1024;
@@ -145,9 +144,9 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
 	         return ret;
 
 
-          ret = snd_soc_dai_set_sysclk(codec_dai, 0, 0, SND_SOC_CLOCK_IN);
-          if (ret < 0)
-                  return ret;
+          //ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_IN);
+          //if (ret < 0)
+          //        return ret;
 
           return 0;
  }
@@ -177,9 +176,9 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
   
       /* set the CPU system clock */
       
-      ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_OUT);
-      if (ret < 0)
-         return ret;
+      //ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 0, SND_SOC_CLOCK_OUT);
+      //if (ret < 0)
+      //   return ret;
       
       return 0;
   }
