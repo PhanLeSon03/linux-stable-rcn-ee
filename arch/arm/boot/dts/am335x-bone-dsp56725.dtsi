@@ -7,12 +7,7 @@
  */
 
 &ocp {
-	P9_17_pinmux {
-		status = "disabled";
-	};
-	P9_18_pinmux {
-		status = "disabled";
-	};
+
 
 	/* The following are disabled because the audio mode is set
 	   by <&mcasp0_pins_dsp56725>. */
@@ -28,16 +23,25 @@
 		/* mcasp0_axr0,       MODE0 | INPUT P9_30   GPIO3_16 */
 		status = "disabled";
 	};
+	
+	P9_41B_pinmux {
+		/* mcasp0_axr1,       MODE0 | INPUT P9_41B   GPIO3_20 */
+		status = "disabled";
+	};
 
 	P9_28_pinmux {
 		/* mcasp0_axr2        MODE2 | INPUT P9_28   GPIO3_17  */
 		status = "disabled";
 	};
 
-	P9_25_pinmux {
-		/* mcasp0_axr3, INPUT | MODE2, Codec SDO56 */
-		status = "disabled";
-	};
+	//P9_25_pinmux {
+	//	/* mcasp0_axr3, INPUT | MODE2, Codec SDO56 */
+	//	status = "disabled";
+	//};
+	
+
+
+
 };
 
 
@@ -51,10 +55,10 @@
 	tdm-slots = <10>;
 	num-serializer = <4>;
 	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
-	2 0 2 2
+	2 2 2 0
 	>;
 	tx-num-evt = <0>;
-	rx-num-evt = <1>;
+	rx-num-evt = <32>;
 };
 
 / {
@@ -67,6 +71,6 @@
 		ti,model = "DSP56725";
 		ti,audio-codec = <&dsp56725>;
 		ti,mcasp-controller = <&mcasp0>;
-		ti,codec-clock-rate = <24576000>;
+		ti,codec-clock-rate = <24000000>;
 	};
 };

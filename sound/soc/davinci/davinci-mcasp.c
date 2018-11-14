@@ -416,6 +416,24 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		data_delay = 1;
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
+
+		mcasp_set_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
+		mcasp_set_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
+
+		/* Async mode*/
+		mcasp_set_bits(mcasp, DAVINCI_MCASP_ACLKXCTL_REG, TX_ASYNC);
+		mcasp_clr_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG,AFSRE);
+
+		/* No delay after FS */
+		data_delay = 1;
+		/* FS need to be inverted */
+		inv_fs = true;
+		if (mcasp_is_synchronous(mcasp))
+			printk("Synchonous mode.\n");
+		else
+			printk("Asynchonous mode.\n");
+
+		break;
 	case SND_SOC_DAIFMT_AC97:
 		mcasp_clr_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
 		mcasp_clr_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
@@ -683,6 +701,9 @@ static int davinci_mcasp_set_ch_constraints(struct davinci_mcasp *mcasp)
 	ret = davinci_mcasp_ch_constraint(mcasp, SNDRV_PCM_STREAM_CAPTURE,
 					  rx_serializers);
 
+	printk("DSP56725 rx_serializers: %d\n",(int)rx_serializers);
+	printk("DSP56725 tx_serializers: %d\n",(int)tx_serializers);
+
 	return ret;
 }
 
@@ -753,6 +774,7 @@ static int davinci_config_channel_size(struct davinci_mcasp *mcasp,
 		 */
 		slot_width = mcasp->slot_width;
 		rx_rotate = (slot_width - sample_width) / 4;
+		printk("DSP56725 slot_width-sample_width-rx_rotate:%d-%d-%d .\n",slot_width,sample_width,rx_rotate);
 	}
 
 	/* mapping of the XSSZ bit-field as described in the datasheet */
@@ -819,7 +841,10 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 				       SRMOD_INACTIVE, SRMOD_MASK);
 		}
 	}
-
+	printk("DSP56725 number of serials:%d.\n",mcasp->num_serializer);
+	printk("DSP56725 number of max active serial: %d.\n",max_active_serializers);
+	printk("DSP56725 number of slots - channels: %d-%d.\n",slots,channels);
+	printk("DSP56725 number of receive serial: %d.\n",rx_ser);
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		active_serializers = tx_ser;
 		numevt = mcasp->txnumevt;
@@ -880,7 +905,7 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 	if (numevt == 1)
 		numevt = 0;
 	dma_data->maxburst = numevt;
-
+	printk("DSP56725 numevt - period word: %d-%d.\n",numevt,period_words);
 	return 0;
 }
 
@@ -894,7 +919,7 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 	u32 busel = 0;
 
 	total_slots = mcasp->tdm_slots;
-
+    printk("DSP56725 mcasp_i2s_hw_param is called.\n");
 	/*
 	 * If more than one serializer is needed, then use them with
 	 * all the specified tdm_slots. Otherwise, one serializer can
@@ -915,6 +940,13 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 				}
 			}
 		}
+		else
+		{
+			printk("DSP56725 Why not come here?\n");
+			mask = mcasp->tdm_mask[stream];
+		}
+
+		printk("DSP56725 TDM stream is set.\n");
 	} else {
 		active_serializers = (channels + total_slots - 1) / total_slots;
 		if (active_serializers == 1)
@@ -924,6 +956,7 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 
 		for (i = 0; i < active_slots; i++)
 			mask |= (1 << i);
+		printk("DSP56725 TDM stream is not set.\n");
 	}
 	mcasp_set_bits(mcasp, DAVINCI_MCASP_ACLKXCTL_REG, TX_ASYNC);
 
@@ -960,6 +993,7 @@ static int mcasp_dit_hw_param(struct davinci_mcasp *mcasp,
 	u32 cs_value = 0;
 	u8 *cs_bytes = (u8*) &cs_value;
 
+	printk("DSP56725 mcasp_dit_hw_param is called.\n");
 	/* Set the TX format : 24 bit right rotation, 32 bit slot, Pad 0
 	   and LSB first */
 	mcasp_set_bits(mcasp, DAVINCI_MCASP_TXFMT_REG, TXROT(6) | TXSSZ(15));
@@ -1033,6 +1067,7 @@ static int davinci_mcasp_calc_clk_div(struct davinci_mcasp *mcasp,
 	int div = sysclk_freq / bclk_freq;
 	int rem = sysclk_freq % bclk_freq;
 	int aux_div = 1;
+    printk("DSP56725 div=%d \n",div);
 
 	if (div > (ACLKXDIV_MASK + 1)) {
 		if (reg & AHCLKXE) {
@@ -1099,7 +1134,10 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
 
 		if (mcasp->slot_width)
 			sbits = mcasp->slot_width;
-
+        printk("DSP56725 Bit clock 1 from Davinci=%d \n",rate * sbits * slots);
+        printk("DSP56725 rate=%d \n",rate);
+        printk("DSP56725 num of bits=%d \n",sbits );
+        printk("DSP56725 num of slot=%d \n",slots);
 		davinci_mcasp_calc_clk_div(mcasp, rate * sbits * slots, true);
 	}
 
@@ -1210,7 +1248,10 @@ static int davinci_mcasp_hw_rule_rate(struct snd_pcm_hw_params *params,
 			uint bclk_freq = sbits*slots*
 				davinci_mcasp_dai_rates[i];
 			int ppm;
-
+			printk("DSP56725 Bit clock 3 from Davinci=%d.\n",bclk_freq);
+	        printk("DSP56725 rate=%d \n",davinci_mcasp_dai_rates[i]);
+	        printk("DSP56725 num of bits=%d \n",sbits );
+	        printk("DSP56725 num of slot=%d \n",slots);
 			ppm = davinci_mcasp_calc_clk_div(rd->mcasp, bclk_freq,
 							 false);
 			if (abs(ppm) < DAVINCI_MAX_RATE_ERROR_PPM) {
@@ -1250,7 +1291,10 @@ static int davinci_mcasp_hw_rule_format(struct snd_pcm_hw_params *params,
 
 			if (rd->mcasp->slot_width)
 				sbits = rd->mcasp->slot_width;
-
+			printk("DSP56725 Bit clock 2 from Davinci=%d.\n",rate * sbits * slots);
+	        printk("DSP56725 rate=%d \n",rate);
+	        printk("DSP56725 num of bits=%d \n",sbits );
+	        printk("DSP56725 num of slot=%d \n",slots);
 			ppm = davinci_mcasp_calc_clk_div(rd->mcasp,
 							 sbits * slots * rate,
 							 false);
