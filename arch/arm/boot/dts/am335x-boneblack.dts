@@ -83,9 +83,9 @@
 			AM33XX_IOPAD(0x9a4, PIN_INPUT_PULLDOWN | MUX_MODE0 )  /* mcasp0_fsr,             MODE0 | INPUT P9_27   GPIO3_19 */
 			AM33XX_IOPAD(0x878, PIN_INPUT_PULLDOWN | MUX_MODE6 )  /* mcasp0_aclkr_mux3,      MODE6 | INPUT P9_12   gpio1_28 */
               
-			AM33XX_IOPAD(0x998, PIN_INPUT_PULLUP | MUX_MODE0)  /* mcasp0_axr0,            MODE0 | INPUT P9_30   GPIO3_16 */
-			AM33XX_IOPAD(0x98a, PIN_INPUT_PULLUP | MUX_MODE0)  /* mcasp0_axr1,            MODE0 | INPUT P9_41B   GPIO3_20*/
-			AM33XX_IOPAD(0x99c, PIN_INPUT_PULLUP | MUX_MODE2)  /* mcasp0_axr2             MODE2 | INPUT P9_28   GPIO3_17  */
+			AM33XX_IOPAD(0x998, PIN_INPUT | MUX_MODE0)  /* mcasp0_axr0,            MODE0 | INPUT P9_30   GPIO3_16 */
+			////AM33XX_IOPAD(0x98a, PIN_INPUT | MUX_MODE0)  /* mcasp0_axr1,            MODE0 | INPUT P9_41B   GPIO3_20*/
+			////AM33XX_IOPAD(0x99c, PIN_INPUT | MUX_MODE2)  /* mcasp0_axr2             MODE2 | INPUT P9_28   GPIO3_17  */
 			//AM33XX_IOPAD(0x9ac, PIN_INPUT_PULLUP | MUX_MODE2)  /* mcasp0_axr3,            MODE2 | INPUT P9_25   GPIO3_21*/
 			                       /*OFFSET DIR|MODE */
 	

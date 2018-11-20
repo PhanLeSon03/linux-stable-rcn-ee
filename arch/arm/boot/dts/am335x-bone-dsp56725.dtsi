@@ -50,15 +50,16 @@
 	pinctrl-0 = <&mcasp0_pins_dsp56725>;
 
 	status = "okay";
-
+	interrupts = <82>, <83>;
+	interrupt-names = "tx", "rx";
 	op-mode = <0>;          /* MCASP_IIS_MODE */
-	tdm-slots = <10>;
+	tdm-slots = <30>;
 	num-serializer = <4>;
 	serial-dir = <  /* 0: INACTIVE, 1: TX, 2: RX */
-	2 2 2 0
+	2 0 0 0 
 	>;
-	tx-num-evt = <0>;
-	rx-num-evt = <32>;
+	tx-num-evt = <30>;
+	rx-num-evt = <30>;
 };
 
 / {
@@ -71,6 +72,6 @@
 		ti,model = "DSP56725";
 		ti,audio-codec = <&dsp56725>;
 		ti,mcasp-controller = <&mcasp0>;
-		ti,codec-clock-rate = <24000000>;
+		ti,codec-clock-rate = <24576000>;
 	};
 };

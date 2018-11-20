@@ -28,7 +28,7 @@
 
 #define DSP56725_AUDIO_FORMAT (SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_DSP_B |SND_SOC_DAIFMT_NB_NF)
 
-#define DSP56725_BCLK_LRCLK_RATIO 32*10
+#define DSP56725_BCLK_LRCLK_RATIO 32*30
 
 struct snd_soc_card_drvdata_davinci {
 	struct clk *mclk;
@@ -74,7 +74,7 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
           unsigned int bclk_freq = snd_soc_params_to_bclk(params);
           unsigned sysclk = ((struct snd_soc_card_drvdata_davinci *)snd_soc_card_get_drvdata(soc_card))->sysclk;
 
-          unsigned int channel_map[] = {0, 4, 1, 5, 2, 6, 3, 7, 8, 9};
+
           int pll_rate = 0; 
           int ret;
           printk("bclk (from params): %d\n", (int)bclk_freq);
@@ -86,7 +86,7 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
               case SNDRV_PCM_FORMAT_S32_LE:
               case SNDRV_PCM_FORMAT_S24_LE:
               case SNDRV_PCM_FORMAT_S24_3LE:
-                  bclk_freq *= 32*10;
+                  bclk_freq *= 32*30;
                   break;
 
               default:
@@ -115,7 +115,7 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
 	   	   //    return ret;
 
 	       // set codec tdm slots
-	       ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x00, 0x3FF, 10, 32);
+	       ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x3FFFFFFF, 0x3FFFFFFF, 30, 32);
 	   	   if (ret < 0)
 	          return ret;
           // lock codec PLL to sysclk
@@ -143,9 +143,9 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
 
 
 	      /* set the CPU system clock */
-	      ret = snd_soc_dai_set_sysclk(cpu_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
-	      if (ret < 0)
-	              return ret;
+	      //ret = snd_soc_dai_set_sysclk(cpu_dai, 0, sysclk, SND_SOC_CLOCK_OUT);
+	      //if (ret < 0)
+	      //        return ret;
 
           return 0;
  }
@@ -166,10 +166,6 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
   
       printk("dsp56725: init setting clocks.\n");
       printk("dsp56725: using cpu %s\n", cpu_dai->name);
-      // set codec tdm slots
-      ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0x00, 0x3FF, 10, 32);
-  	  if (ret < 0)
-         return ret;
   
       /* set cpu DAI configuration */
       ret = snd_soc_dai_set_clkdiv(cpu_dai, 2, DSP56725_BCLK_LRCLK_RATIO);
@@ -178,9 +174,9 @@ static int evm_dsp56725_hw_params(struct snd_pcm_substream *substream,
          return ret;
   
       /* set the CPU system clock */
-      ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 24000000, SND_SOC_CLOCK_OUT);
-      if (ret < 0)
-              return ret;
+      //ret = snd_soc_dai_set_sysclk(cpu_dai, 0, 24576000, SND_SOC_CLOCK_OUT);
+      //if (ret < 0)
+      //        return ret;
       
       return 0;
   }

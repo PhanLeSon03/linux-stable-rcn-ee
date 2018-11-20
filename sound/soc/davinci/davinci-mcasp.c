@@ -202,6 +202,7 @@ static void mcasp_start_rx(struct davinci_mcasp *mcasp)
 	mcasp_set_ctl_reg(mcasp, DAVINCI_MCASP_GBLCTLR_REG, RXSMRST);
 	/* Release Frame Sync generator */
 	mcasp_set_ctl_reg(mcasp, DAVINCI_MCASP_GBLCTLR_REG, RXFSRST);
+
 	if (mcasp_is_synchronous(mcasp))
 		mcasp_set_ctl_reg(mcasp, DAVINCI_MCASP_GBLCTLX_REG, TXFSRST);
 
@@ -416,23 +417,13 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		data_delay = 1;
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
-
-		mcasp_set_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
-		mcasp_set_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
-
-		/* Async mode*/
-		mcasp_set_bits(mcasp, DAVINCI_MCASP_ACLKXCTL_REG, TX_ASYNC);
-		mcasp_clr_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG,AFSRE);
-
-		/* No delay after FS */
-		data_delay = 1;
+		/* configure a full-word SYNC pulse (LRCLK) */
+		mcasp_clr_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
+		mcasp_clr_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG, FSRDUR);
+		/* 1st data bit occur one ACLK cycle after the frame sync */
+		data_delay = 0;
 		/* FS need to be inverted */
-		inv_fs = true;
-		if (mcasp_is_synchronous(mcasp))
-			printk("Synchonous mode.\n");
-		else
-			printk("Asynchonous mode.\n");
-
+		//inv_fs = true;
 		break;
 	case SND_SOC_DAIFMT_AC97:
 		mcasp_clr_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
@@ -447,7 +438,7 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		/* 1st data bit occur one ACLK cycle after the frame sync */
 		data_delay = 1;
 		/* FS need to be inverted */
-		inv_fs = true;
+		//inv_fs = true;
 		break;
 	case SND_SOC_DAIFMT_LEFT_J:
 		/* configure a full-word SYNC pulse (LRCLK) */
@@ -970,9 +961,10 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 			       FSXMOD(total_slots), FSXMOD(0x1FF));
 	} else if (stream == SNDRV_PCM_STREAM_CAPTURE) {
 		mcasp_set_reg(mcasp, DAVINCI_MCASP_RXTDM_REG, mask);
-		mcasp_set_bits(mcasp, DAVINCI_MCASP_RXFMT_REG, busel | RXORD);
+		mcasp_clr_bits(mcasp, DAVINCI_MCASP_RXFMT_REG, busel | RXORD);
 		mcasp_mod_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG,
 			       FSRMOD(total_slots), FSRMOD(0x1FF));
+
 		/*
 		 * If McASP is set to be TX/RX synchronous and the playback is
 		 * not running already we need to configure the TX slots in
